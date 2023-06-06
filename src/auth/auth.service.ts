@@ -14,7 +14,7 @@ import { RefreshTokenPayload } from './strategies/refreshToken.strategy';
 import { IAuth } from 'src/models/requests/auth.model';
 import { Tokens } from 'src/models/responses/tokens.model';
 
-const daysLater = 60 * 1000;
+const daysLater = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -155,7 +155,7 @@ export class AuthService {
       }),
       this.jwtService.signAsync(refreshTokenPayload, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: '60s',
+        expiresIn: '7d',
       }),
     ]);
 
