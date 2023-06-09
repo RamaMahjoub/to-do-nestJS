@@ -18,15 +18,15 @@ const daysLater = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
-  constructor(
+  constructor(      
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
-
+  ) {}                  
+                              
   async signUp(userDate: User & { confirmPassword: string }): Promise<Tokens> {
     const userExists = await this.usersService.findByEmail(userDate.email);
-    if (userExists) {
+    if (userExists) {                     
       throw new BadRequestException('User already exists');
     }
 
@@ -146,7 +146,7 @@ export class AuthService {
     const refreshTokenPayload: RefreshTokenPayload = {
       sub: userId,
       email,
-      refreshTokenExpiration: expDate,
+      refreshTokenExpiration: expDate,              
     };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(accessTokenPayload, {
