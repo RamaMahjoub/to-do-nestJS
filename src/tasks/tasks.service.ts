@@ -1,6 +1,10 @@
 /* eslint-disable prettier/prettier */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Task } from '@prisma/client';
+import {
+  IOrderDifferentColumns,
+  IOrderSameColumn,
+} from 'src/models/requests/orderTasks.model';
 import { ITaskCreate, ITaskUpdate } from 'src/models/requests/task.model';
 import { PrismaService } from 'src/prisma.service';
 
@@ -51,14 +55,27 @@ export class TasksService {
     if (task.userId !== userId) {
       throw new UnauthorizedException('You can not update this task');
     }
+    const tasks = await this.fetchTasks(userId, task.status);
+    for (let i = 0; i < tasks.length; i++) {
+      if (tasks[i].order > task.order)
+        this.updateTask(userId, tasks[i].id, { order: tasks[i].order - 1 });
+    }
     return this.prisma.task.delete({ where: { id: taskId } });
   }
 
   async fetchTasks(userId: string, status: string): Promise<Task[] | null> {
-    return this.prisma.task.findMany({ where: { userId, status } });
+    return await this.prisma.task.findMany({
+      orderBy: {
+        order: 'asc',
+      },
+      where: { userId, status },
+    });
   }
 
-  async reOrderInSamaColumn(userId, data): Promise<Task[] | null> {
+  async reOrderInSamaColumn(
+    userId: string,
+    data: IOrderSameColumn,
+  ): Promise<Task[] | null> {
     const { columnTitle, source, destination } = data;
     const tasks: Task[] | null = await this.fetchTasks(userId, columnTitle);
     const sourceTask: Task = await this.prisma.task.findFirst({
@@ -78,10 +95,12 @@ export class TasksService {
     });
     await this.updateTask(userId, sourceTask.id, { order: destination });
 
-    return await this.fetchTasks(userId, columnTitle);
+    const dat = await this.fetchTasks(userId, columnTitle);
+    console.log('daaaaaaaaaaata', await this.fetchTasks(userId, columnTitle));
+    return dat;
   }
 
-  async reOrderNotInSamaColumn(userId, data) {
+  async reOrderNotInSamaColumn(userId: string, data: IOrderDifferentColumns) {
     const {
       columnSource,
       columnDestination,
@@ -91,6 +110,7 @@ export class TasksService {
       destination,
     } = data;
 
+    console.log('dataaaaaaaaaaa', data);
     const sourceTask: Task = await this.prisma.task.findFirst({
       where: { userId, status: columnSource, order: source },
     });
@@ -100,6 +120,7 @@ export class TasksService {
         await this.updateTask(userId, task.id, { order: task.order - 1 });
       }
     });
+
     destinationTasks.map(async (task) => {
       if (task.order >= destination) {
         await this.updateTask(userId, task.id, { order: task.order + 1 });
